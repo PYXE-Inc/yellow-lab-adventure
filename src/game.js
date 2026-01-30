@@ -2,6 +2,7 @@
 import Goal from './goal.js';
 import { GameState } from './gameState.js';
 import { Level } from './level.js';
+import { audioManager } from './audio.js';
 
 // Game constants
 const CANVAS_WIDTH = 800;
@@ -108,6 +109,7 @@ function update(deltaTime) {
             if (collectible.checkCollision(player)) {
                 score.add(collectible.value);
                 level.collectibles.splice(i, 1);
+                audioManager.playSound('collect');
             }
         }
 
@@ -120,12 +122,14 @@ function update(deltaTime) {
                 player.y < enemy.y + enemy.height &&
                 player.y + player.height > enemy.y
             ) {
+                audioManager.playSound('lose');
                 gameState.lose();
             }
         });
 
         // Check goal collision
         if (goal.checkCollision(player)) {
+            audioManager.playSound('win');
             gameState.win();
         }
 
@@ -249,7 +253,21 @@ function restart() {
 
     // Reset camera
     camera.follow(player);
+
+    // Restart background music
+    audioManager.playMusic('music');
 }
+
+// Expose audioManager to window for non-module scripts
+window.audioManager = audioManager;
+
+// Initialize audio system
+audioManager.init();
+audioManager.loadAllSounds().then(() => {
+    console.log('Audio system ready');
+    // Start background music when audio is ready
+    audioManager.playMusic('music');
+});
 
 // Add keyboard listener for R key to restart
 document.addEventListener('keydown', (event) => {
