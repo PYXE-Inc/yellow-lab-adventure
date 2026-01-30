@@ -21,6 +21,9 @@ class Player {
         // State
         this.isGrounded = false;
         this.facingDirection = 1; // 1 = right, -1 = left
+
+        // Animation
+        this.animator = new SpriteAnimator('assets/lab-spritesheet.png', 48, 48);
     }
 
     /**
@@ -30,6 +33,8 @@ class Player {
      */
     update(dt, input) {
         // Horizontal movement
+        const isMoving = input.left || input.right;
+
         if (input.left) {
             this.vx = -this.MOVE_SPEED;
             this.facingDirection = -1;
@@ -48,6 +53,34 @@ class Player {
 
         // Apply horizontal velocity
         this.x += this.vx * dt;
+
+        // Select animation based on player state
+        this.updateAnimation(isMoving);
+
+        // Update animator
+        this.animator.update(dt);
+    }
+
+    /**
+     * Select the appropriate animation based on player state
+     * @param {boolean} isMoving - Whether the player is moving horizontally
+     */
+    updateAnimation(isMoving) {
+        if (!this.isGrounded) {
+            // In air - check if jumping (going up) or falling (going down)
+            if (this.vy < 0) {
+                this.animator.setAnimation('jump');
+            } else {
+                this.animator.setAnimation('fall');
+            }
+        } else {
+            // On ground - check if moving or idle
+            if (isMoving) {
+                this.animator.setAnimation('run');
+            } else {
+                this.animator.setAnimation('idle');
+            }
+        }
     }
 
     /**
@@ -55,7 +88,8 @@ class Player {
      * @param {CanvasRenderingContext2D} ctx - Canvas rendering context
      */
     render(ctx) {
-        ctx.fillStyle = '#F4D03F'; // Yellow color
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        // Flip sprite when facing left
+        const flipX = this.facingDirection === -1;
+        this.animator.render(ctx, this.x, this.y, flipX);
     }
 }

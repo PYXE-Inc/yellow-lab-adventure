@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yellow Lab Spritesheet Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #222;
+            color: #fff;
+        }
+        canvas {
+            border: 2px solid #fff;
+            background: #333;
+            display: block;
+            margin: 20px 0;
+            image-rendering: pixelated;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #F4D03F;
+            border: none;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #F39C12;
+        }
+        .info {
+            background: #333;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Yellow Lab Spritesheet Generator</h1>
+    <div class="info">
+        <p>This will generate a simple placeholder spritesheet with 7 frames (336x48 pixels).</p>
+        <p>Frames: Idle, Run×4, Jump, Fall</p>
+    </div>
+    <button onclick="generateSpritesheet()">Generate Spritesheet</button>
+    <button onclick="downloadSpritesheet()">Download PNG</button>
+    <br><br>
+    <canvas id="spriteCanvas" width="336" height="48"></canvas>
+
+    <script>
+        const canvas = document.getElementById('spriteCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawLabFrame(ctx, x, frameType) {
+            const centerX = x + 24;
+            const centerY = 24;
+
+            // Yellow lab color
+            ctx.fillStyle = '#F4D03F';
+            ctx.strokeStyle = '#D4A017';
+            ctx.lineWidth = 2;
+
+            // Draw based on frame type
+            switch(frameType) {
+                case 'idle':
+                    // Simple standing lab - body and head
+                    // Body (rounded rectangle)
+                    ctx.beginPath();
+                    ctx.ellipse(centerX, centerY + 4, 14, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Head
+                    ctx.beginPath();
+                    ctx.ellipse(centerX, centerY - 8, 8, 8, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Ears
+                    ctx.beginPath();
+                    ctx.ellipse(centerX - 5, centerY - 10, 3, 5, -0.3, 0, Math.PI * 2);
+                    ctx.ellipse(centerX + 5, centerY - 10, 3, 5, 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Legs (standing)
+                    ctx.strokeStyle = '#D4A017';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX - 6, centerY + 14);
+                    ctx.lineTo(centerX - 6, centerY + 20);
+                    ctx.moveTo(centerX + 6, centerY + 14);
+                    ctx.lineTo(centerX + 6, centerY + 20);
+                    ctx.stroke();
+
+                    // Tail
+                    ctx.beginPath();
+                    ctx.arc(centerX + 16, centerY, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+
+                case 'run1':
+                case 'run2':
+                case 'run3':
+                case 'run4':
+                    // Running pose - elongated body, alternating legs
+                    const legOffset = frameType === 'run1' || frameType === 'run3' ? 1 : -1;
+
+                    // Body (horizontal ellipse)
+                    ctx.beginPath();
+                    ctx.ellipse(centerX + 2, centerY + 2, 16, 8, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Head (forward)
+                    ctx.beginPath();
+                    ctx.ellipse(centerX - 10, centerY - 4, 7, 7, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Ears
+                    ctx.beginPath();
+                    ctx.ellipse(centerX - 12, centerY - 8, 3, 5, -0.5, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Legs (animated)
+                    ctx.strokeStyle = '#D4A017';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX - 4, centerY + 10);
+                    ctx.lineTo(centerX - 4 + legOffset * 3, centerY + 18);
+                    ctx.moveTo(centerX + 8, centerY + 10);
+                    ctx.lineTo(centerX + 8 - legOffset * 3, centerY + 18);
+                    ctx.stroke();
+
+                    // Tail (up)
+                    ctx.beginPath();
+                    ctx.arc(centerX + 16, centerY - 4, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+
+                case 'jump':
+                    // Jump pose - legs tucked
+                    // Body
+                    ctx.beginPath();
+                    ctx.ellipse(centerX, centerY, 14, 10, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Head
+                    ctx.beginPath();
+                    ctx.ellipse(centerX, centerY - 10, 8, 8, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Ears (perked up)
+                    ctx.beginPath();
+                    ctx.ellipse(centerX - 5, centerY - 14, 3, 5, -0.2, 0, Math.PI * 2);
+                    ctx.ellipse(centerX + 5, centerY - 14, 3, 5, 0.2, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Legs (tucked)
+                    ctx.strokeStyle = '#D4A017';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX - 8, centerY + 8);
+                    ctx.lineTo(centerX - 10, centerY + 12);
+                    ctx.moveTo(centerX + 8, centerY + 8);
+                    ctx.lineTo(centerX + 10, centerY + 12);
+                    ctx.stroke();
+
+                    // Tail (straight back)
+                    ctx.beginPath();
+                    ctx.arc(centerX + 14, centerY + 2, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+
+                case 'fall':
+                    // Fall pose - legs extended
+                    // Body (slightly tilted)
+                    ctx.beginPath();
+                    ctx.ellipse(centerX, centerY + 2, 14, 10, 0.2, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Head
+                    ctx.beginPath();
+                    ctx.ellipse(centerX - 2, centerY - 8, 8, 8, 0, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Ears (back)
+                    ctx.beginPath();
+                    ctx.ellipse(centerX - 6, centerY - 10, 3, 5, -0.5, 0, Math.PI * 2);
+                    ctx.ellipse(centerX + 2, centerY - 12, 3, 5, 0.3, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // Legs (extended down)
+                    ctx.strokeStyle = '#D4A017';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.moveTo(centerX - 8, centerY + 10);
+                    ctx.lineTo(centerX - 8, centerY + 20);
+                    ctx.moveTo(centerX + 8, centerY + 10);
+                    ctx.lineTo(centerX + 8, centerY + 20);
+                    ctx.stroke();
+
+                    // Tail (down)
+                    ctx.beginPath();
+                    ctx.arc(centerX + 12, centerY + 8, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    break;
+            }
+        }
+
+        function generateSpritesheet() {
+            // Clear canvas
+            ctx.fillStyle = 'transparent';
+            ctx.clearRect(0, 0, 336, 48);
+
+            // Draw each frame
+            const frames = ['idle', 'run1', 'run2', 'run3', 'run4', 'jump', 'fall'];
+            frames.forEach((frameType, index) => {
+                drawLabFrame(ctx, index * 48, frameType);
+            });
+
+            console.log('Spritesheet generated!');
+        }
+
+        function downloadSpritesheet() {
+            // Generate first if not already done
+            generateSpritesheet();
+
+            // Create download link
+            canvas.toBlob(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'lab-spritesheet.png';
+                a.click();
+                URL.revokeObjectURL(url);
+                console.log('Download started!');
+            });
+        }
+
+        // Generate on load
+        window.addEventListener('load', generateSpritesheet);
+    </script>
+</body>
+</html>
