@@ -1,3 +1,5 @@
+import { audioManager } from './audio.js';
+
 export class GameState {
   constructor() {
     this.state = 'playing';
@@ -9,10 +11,12 @@ export class GameState {
 
   win() {
     this.state = 'won';
+    audioManager.stopMusic();
   }
 
   lose() {
     this.state = 'lost';
+    audioManager.stopMusic();
   }
 
   isPlaying() {

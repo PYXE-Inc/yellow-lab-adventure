@@ -22,8 +22,19 @@ class Player {
         this.isGrounded = false;
         this.facingDirection = 1; // 1 = right, -1 = left
 
+        // Bark state (random barking while idle)
+        this.barkTimer = 0;
+        this.nextBarkTime = this.getRandomBarkDelay();
+
         // Animation
         this.animator = new SpriteAnimator('assets/lab-spritesheet.png', 48, 48);
+    }
+
+    /**
+     * Get a random delay for the next bark (5-15 seconds)
+     */
+    getRandomBarkDelay() {
+        return 5 + Math.random() * 10;
     }
 
     /**
@@ -49,10 +60,29 @@ class Player {
         if (input.jump && this.isGrounded) {
             this.vy = this.JUMP_FORCE;
             this.isGrounded = false;
+            // Play jump sound (access via window for non-module script)
+            if (window.audioManager) {
+                window.audioManager.playSound('jump');
+            }
         }
 
         // Apply horizontal velocity
         this.x += this.vx * dt;
+
+        // Random bark when idle and grounded
+        if (this.isGrounded && !isMoving) {
+            this.barkTimer += dt;
+            if (this.barkTimer >= this.nextBarkTime) {
+                if (window.audioManager) {
+                    window.audioManager.playSound('bark');
+                }
+                this.barkTimer = 0;
+                this.nextBarkTime = this.getRandomBarkDelay();
+            }
+        } else {
+            // Reset bark timer when moving or in air
+            this.barkTimer = 0;
+        }
 
         // Select animation based on player state
         this.updateAnimation(isMoving);
