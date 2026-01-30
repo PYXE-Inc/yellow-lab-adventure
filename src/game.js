@@ -1,3 +1,8 @@
+// Import modules
+import Goal from './goal.js';
+import { GameState } from './gameState.js';
+import { Level } from './level.js';
+
 // Game constants
 const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
@@ -8,8 +13,8 @@ const FRAME_TIME = 1000 / TARGET_FPS; // ~16.67ms per frame
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Game state
-const gameState = {
+// Frame tracking state
+const frameState = {
     running: true,
     frameCount: 0,
     deltaTime: 0,
@@ -32,76 +37,113 @@ const camera = new Camera(CANVAS_WIDTH, CANVAS_HEIGHT);
 camera.follow(player);
 camera.setBounds(0, 0, worldBounds.width, worldBounds.height);
 
+// Create game state instance
+const gameState = new GameState();
+
+// Create goal instance at end of level (level width is 3000, place at 2900)
+const goal = new Goal(2900, 436); // y=436 places it on the ground (500 - 64)
+
+// Create score instance
+const score = new Score();
+
 // Update game state
 function update(deltaTime) {
-    gameState.deltaTime = deltaTime;
-    gameState.frameCount++;
+    frameState.deltaTime = deltaTime;
+    frameState.frameCount++;
 
     // Convert deltaTime to seconds
     const dt = deltaTime / 1000;
 
-    // Build input object from Input module
-    const input = {
-        left: Input.isKeyDown('left'),
-        right: Input.isKeyDown('right'),
-        jump: Input.isKeyDown('jump')
-    };
+    // Only update game logic if playing
+    if (gameState.isPlaying()) {
+        // Build input object from Input module
+        const input = {
+            left: Input.isKeyDown('left'),
+            right: Input.isKeyDown('right'),
+            jump: Input.isKeyDown('jump')
+        };
 
-    // Update player with input
-    player.update(dt, input);
+        // Update player with input
+        player.update(dt, input);
 
-    // Apply physics
-    applyGravity(player, dt);
+        // Apply physics
+        applyGravity(player, dt);
 
-    // Apply vertical velocity
-    player.y += player.vy * dt;
+        // Apply vertical velocity
+        player.y += player.vy * dt;
 
-    // Get platforms from level and check collision
-    const platforms = level.getPlatforms();
-    const collision = checkPlatformCollision(
-        {
-            x: player.x,
-            y: player.y,
-            width: player.width,
-            height: player.height,
-            velocityY: player.vy
-        },
-        platforms
-    );
+        // Get platforms from level and check collision
+        const platforms = level.getPlatforms();
+        const collision = checkPlatformCollision(
+            {
+                x: player.x,
+                y: player.y,
+                width: player.width,
+                height: player.height,
+                velocityY: player.vy
+            },
+            platforms
+        );
 
-    // Apply collision correction
-    if (collision.grounded) {
-        player.y = collision.correctedY;
-        player.vy = 0;
-        player.isGrounded = true;
-    } else {
-        player.isGrounded = false;
+        // Apply collision correction
+        if (collision.grounded) {
+            player.y = collision.correctedY;
+            player.vy = 0;
+            player.isGrounded = true;
+        } else {
+            player.isGrounded = false;
+        }
+
+        // Check if player fell off the world
+        if (player.y > worldBounds.height) {
+            gameState.lose();
+        }
+
+        // Update level (collectibles and enemies)
+        level.update(dt);
+
+        // Check collectible collisions (iterate backwards to safely remove items)
+        for (let i = level.collectibles.length - 1; i >= 0; i--) {
+            const collectible = level.collectibles[i];
+            if (collectible.checkCollision(player)) {
+                score.add(collectible.value);
+                level.collectibles.splice(i, 1);
+            }
+        }
+
+        // Check enemy collisions with player
+        level.enemies.forEach(enemy => {
+            // AABB collision detection
+            if (
+                player.x < enemy.x + enemy.width &&
+                player.x + player.width > enemy.x &&
+                player.y < enemy.y + enemy.height &&
+                player.y + player.height > enemy.y
+            ) {
+                gameState.lose();
+            }
+        });
+
+        // Check goal collision
+        if (goal.checkCollision(player)) {
+            gameState.win();
+        }
+
+        // Update camera position to follow player
+        camera.update();
     }
-
-    // Check if player fell off the world
-    if (player.y > worldBounds.height) {
-        // Reset player to start position
-        player.x = PLAYER_START_X;
-        player.y = PLAYER_START_Y;
-        player.vx = 0;
-        player.vy = 0;
-        player.isGrounded = false;
-    }
-
-    // Update camera position to follow player
-    camera.update();
 
     // Calculate FPS every second
-    gameState.fpsUpdateTime += deltaTime;
-    if (gameState.fpsUpdateTime >= 1000) {
-        gameState.fps = gameState.frameCount;
-        gameState.frameCount = 0;
-        gameState.fpsUpdateTime = 0;
+    frameState.fpsUpdateTime += deltaTime;
+    if (frameState.fpsUpdateTime >= 1000) {
+        frameState.fps = frameState.frameCount;
+        frameState.frameCount = 0;
+        frameState.fpsUpdateTime = 0;
 
         // Update FPS display
         const fpsDisplay = document.getElementById('fps');
         if (fpsDisplay) {
-            fpsDisplay.textContent = `FPS: ${gameState.fps}`;
+            fpsDisplay.textContent = `FPS: ${frameState.fps}`;
         }
     }
 }
@@ -161,19 +203,69 @@ function render() {
         );
     });
 
+    // Render collectibles
+    level.collectibles.forEach(collectible => {
+        collectible.render(ctx, { x: -offset.x, y: -offset.y });
+    });
+
+    // Render enemies
+    level.enemies.forEach(enemy => {
+        enemy.render(ctx, camera);
+    });
+
     // Draw player with camera offset
     player.render(ctx);
 
+    // Draw goal (doghouse)
+    goal.render(ctx, -offset.x);
+
     // Restore context state
     ctx.restore();
+
+    // Render score (not affected by camera)
+    score.render(ctx);
+
+    // Render game state overlay (win/lose screen)
+    gameState.renderOverlay(ctx, CANVAS_WIDTH, CANVAS_HEIGHT);
 }
+
+// Restart function - resets game to initial state
+function restart() {
+    // Reset player position and velocity
+    player.x = PLAYER_START_X;
+    player.y = PLAYER_START_Y;
+    player.vx = 0;
+    player.vy = 0;
+    player.isGrounded = false;
+
+    // Reset game state
+    gameState.reset();
+
+    // Reset score
+    score.reset();
+
+    // Reset level (respawn collectibles and enemies)
+    level.reset();
+
+    // Reset camera
+    camera.follow(player);
+}
+
+// Add keyboard listener for R key to restart
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'r' || event.key === 'R') {
+        if (gameState.isWon() || gameState.isLost()) {
+            restart();
+        }
+    }
+});
 
 // Main game loop
 function gameLoop(currentTime) {
-    if (gameState.running) {
+    if (frameState.running) {
         // Calculate delta time
-        const deltaTime = currentTime - gameState.lastTime;
-        gameState.lastTime = currentTime;
+        const deltaTime = currentTime - frameState.lastTime;
+        frameState.lastTime = currentTime;
 
         // Update and render
         update(deltaTime);
