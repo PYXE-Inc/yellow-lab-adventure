@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yellow Lab Adventure</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #222;
+            font-family: Arial, sans-serif;
+        }
+
+        canvas {
+            border: 2px solid #fff;
+            background-color: #87ceeb;
+            display: block;
+        }
+
+        #fps {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            color: #fff;
+            font-size: 14px;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="fps">FPS: 0</div>
+    <script src="src/physics.js"></script>
+    <script src="src/sprite.js"></script>
+    <script src="src/player.js"></script>
+    <script src="src/input.js"></script>
+    <script src="src/game.js"></script>
+</body>
+</html>
