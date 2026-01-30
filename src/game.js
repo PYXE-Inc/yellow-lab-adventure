@@ -3,6 +3,7 @@ const CANVAS_WIDTH = 800;
 const CANVAS_HEIGHT = 600;
 const TARGET_FPS = 60;
 const FRAME_TIME = 1000 / TARGET_FPS; // ~16.67ms per frame
+const GROUND_LEVEL = 500; // Fixed ground level for testing
 
 // Get canvas and context
 const canvas = document.getElementById('gameCanvas');
@@ -18,34 +19,88 @@ const gameState = {
     fpsUpdateTime: 0
 };
 
-// Render a test rectangle
-function renderTestRectangle() {
-    // Draw a rectangle in the center of the canvas
-    const rectWidth = 100;
-    const rectHeight = 80;
-    const x = (CANVAS_WIDTH - rectWidth) / 2;
-    const y = (CANVAS_HEIGHT - rectHeight) / 2;
+// Input state
+const input = {
+    left: false,
+    right: false,
+    jump: false,
+    jumpPressed: false // Track if jump key was just pressed
+};
 
-    ctx.fillStyle = '#ff6b6b';
-    ctx.fillRect(x, y, rectWidth, rectHeight);
+// Create player instance
+const player = new Player(100, GROUND_LEVEL - 48); // Start above ground
 
-    // Draw a border around it
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, rectWidth, rectHeight);
+// Input handlers
+function handleKeyDown(e) {
+    switch (e.key) {
+        case 'ArrowLeft':
+        case 'a':
+            input.left = true;
+            break;
+        case 'ArrowRight':
+        case 'd':
+            input.right = true;
+            break;
+        case 'ArrowUp':
+        case 'w':
+        case ' ':
+            if (!input.jumpPressed) {
+                input.jump = true;
+                input.jumpPressed = true;
+            }
+            e.preventDefault();
+            break;
+    }
+}
 
-    // Draw text to indicate it's working
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'top';
-    ctx.fillText('Game Running', CANVAS_WIDTH / 2, y + rectHeight + 20);
+function handleKeyUp(e) {
+    switch (e.key) {
+        case 'ArrowLeft':
+        case 'a':
+            input.left = false;
+            break;
+        case 'ArrowRight':
+        case 'd':
+            input.right = false;
+            break;
+        case 'ArrowUp':
+        case 'w':
+        case ' ':
+            input.jump = false;
+            input.jumpPressed = false;
+            break;
+    }
+}
+
+// Add event listeners
+window.addEventListener('keydown', handleKeyDown);
+window.addEventListener('keyup', handleKeyUp);
+
+// Render ground
+function renderGround() {
+    ctx.fillStyle = '#8B4513'; // Brown color for ground
+    ctx.fillRect(0, GROUND_LEVEL, CANVAS_WIDTH, CANVAS_HEIGHT - GROUND_LEVEL);
 }
 
 // Update game state
 function update(deltaTime) {
     gameState.deltaTime = deltaTime;
     gameState.frameCount++;
+
+    // Convert deltaTime to seconds
+    const dt = deltaTime / 1000;
+
+    // Update player with input
+    player.update(dt, input);
+
+    // Apply physics
+    applyGravity(player, dt);
+
+    // Apply vertical velocity
+    player.y += player.vy * dt;
+
+    // Check ground collision
+    checkGroundCollision(player, GROUND_LEVEL);
 
     // Calculate FPS every second
     gameState.fpsUpdateTime += deltaTime;
@@ -59,9 +114,6 @@ function update(deltaTime) {
         if (fpsDisplay) {
             fpsDisplay.textContent = `FPS: ${gameState.fps}`;
         }
-
-        // Log to console for verification
-        console.log(`Frame count: ${gameState.frameCount}, FPS: ${gameState.fps}`);
     }
 }
 
@@ -74,7 +126,8 @@ function clear() {
 // Render frame
 function render() {
     clear();
-    renderTestRectangle();
+    renderGround();
+    player.render(ctx);
 }
 
 // Main game loop
