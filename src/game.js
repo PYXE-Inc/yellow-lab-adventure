@@ -19,62 +19,8 @@ const gameState = {
     fpsUpdateTime: 0
 };
 
-// Input state
-const input = {
-    left: false,
-    right: false,
-    jump: false,
-    jumpPressed: false // Track if jump key was just pressed
-};
-
 // Create player instance
 const player = new Player(100, GROUND_LEVEL - 48); // Start above ground
-
-// Input handlers
-function handleKeyDown(e) {
-    switch (e.key) {
-        case 'ArrowLeft':
-        case 'a':
-            input.left = true;
-            break;
-        case 'ArrowRight':
-        case 'd':
-            input.right = true;
-            break;
-        case 'ArrowUp':
-        case 'w':
-        case ' ':
-            if (!input.jumpPressed) {
-                input.jump = true;
-                input.jumpPressed = true;
-            }
-            e.preventDefault();
-            break;
-    }
-}
-
-function handleKeyUp(e) {
-    switch (e.key) {
-        case 'ArrowLeft':
-        case 'a':
-            input.left = false;
-            break;
-        case 'ArrowRight':
-        case 'd':
-            input.right = false;
-            break;
-        case 'ArrowUp':
-        case 'w':
-        case ' ':
-            input.jump = false;
-            input.jumpPressed = false;
-            break;
-    }
-}
-
-// Add event listeners
-window.addEventListener('keydown', handleKeyDown);
-window.addEventListener('keyup', handleKeyUp);
 
 // Render ground
 function renderGround() {
@@ -89,6 +35,13 @@ function update(deltaTime) {
 
     // Convert deltaTime to seconds
     const dt = deltaTime / 1000;
+
+    // Build input object from Input module
+    const input = {
+        left: Input.isKeyDown('left'),
+        right: Input.isKeyDown('right'),
+        jump: Input.isKeyDown('jump')
+    };
 
     // Update player with input
     player.update(dt, input);
