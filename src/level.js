@@ -1,3 +1,6 @@
+import Collectible from './collectible.js';
+import Enemy from './enemy.js';
+
 /**
  * Platform class - represents a single platform in the level
  */
@@ -52,6 +55,10 @@ class Level {
         this.width = width;
         this.height = height;
         this.platforms = platforms;
+        this.collectibles = [];
+        this.enemies = [];
+        this.initialCollectibles = []; // Store initial configs for reset
+        this.initialEnemies = []; // Store initial configs for reset
     }
 
     /**
@@ -79,6 +86,61 @@ class Level {
      */
     addPlatform(platform) {
         this.platforms.push(platform);
+    }
+
+    /**
+     * Add a collectible to the level
+     * @param {Object} config - Collectible configuration (x, y, type, value)
+     */
+    addCollectible(config) {
+        const collectible = new Collectible(config);
+        this.collectibles.push(collectible);
+        this.initialCollectibles.push(config); // Store for reset
+    }
+
+    /**
+     * Add an enemy to the level
+     * @param {Object} config - Enemy configuration (x, y, type, patrolStart, patrolEnd)
+     */
+    addEnemy(config) {
+        const enemy = new Enemy(config);
+        this.enemies.push(enemy);
+        this.initialEnemies.push(config); // Store for reset
+    }
+
+    /**
+     * Update all collectibles and enemies in the level
+     * @param {number} deltaTime - Time elapsed since last frame (in seconds)
+     */
+    update(deltaTime) {
+        // Update all collectibles
+        this.collectibles.forEach(collectible => {
+            collectible.update(deltaTime);
+        });
+
+        // Update all enemies
+        this.enemies.forEach(enemy => {
+            enemy.update(deltaTime);
+        });
+    }
+
+    /**
+     * Reset level - respawn all collectibles and enemies to initial positions
+     */
+    reset() {
+        // Clear existing entities
+        this.collectibles = [];
+        this.enemies = [];
+
+        // Respawn collectibles from initial configs
+        this.initialCollectibles.forEach(config => {
+            this.collectibles.push(new Collectible(config));
+        });
+
+        // Respawn enemies from initial configs
+        this.initialEnemies.forEach(config => {
+            this.enemies.push(new Enemy(config));
+        });
     }
 
     /**
@@ -144,7 +206,57 @@ class Level {
         platforms.push(new Platform(2700, 320, 90, 20, 'floating'));
         platforms.push(new Platform(2850, 280, 100, 20, 'floating'));
 
-        return new Level(WORLD_WIDTH, WORLD_HEIGHT, platforms);
+        const level = new Level(WORLD_WIDTH, WORLD_HEIGHT, platforms);
+
+        // Add collectibles (treats and tennis balls)
+        // Starting area treats
+        level.addCollectible({ x: 150, y: 460, type: 'treat' });
+        level.addCollectible({ x: 300, y: 340, type: 'treat' });
+
+        // Tennis ball on floating platform
+        level.addCollectible({ x: 470, y: 310, type: 'tennis_ball' });
+
+        // Mid-section collectibles
+        level.addCollectible({ x: 700, y: 460, type: 'treat' });
+        level.addCollectible({ x: 1050, y: 260, type: 'tennis_ball' });
+        level.addCollectible({ x: 1450, y: 210, type: 'treat' });
+
+        // High reward area
+        level.addCollectible({ x: 1700, y: 180, type: 'tennis_ball' });
+
+        // End section treats
+        level.addCollectible({ x: 2250, y: 460, type: 'treat' });
+        level.addCollectible({ x: 2650, y: 140, type: 'tennis_ball' });
+
+        // Add enemies (squirrels and cats)
+        // Squirrel patrolling first ground section
+        level.addEnemy({
+            x: 600,
+            y: 452,
+            type: 'squirrel',
+            patrolStart: 500,
+            patrolEnd: 750
+        });
+
+        // Cat patrolling middle ground section
+        level.addEnemy({
+            x: 1400,
+            y: 452,
+            type: 'cat',
+            patrolStart: 1250,
+            patrolEnd: 1650
+        });
+
+        // Squirrel patrolling near end
+        level.addEnemy({
+            x: 2200,
+            y: 452,
+            type: 'squirrel',
+            patrolStart: 2150,
+            patrolEnd: 2400
+        });
+
+        return level;
     }
 
     /**
@@ -186,6 +298,25 @@ class Level {
                 platform.width,
                 3
             );
+        });
+
+        // Create camera object with expected format for collectibles and enemies
+        const camera = { x: offsetX, y: offsetY };
+
+        // Render all collectibles
+        this.collectibles.forEach(collectible => {
+            collectible.render(ctx, camera);
+        });
+
+        // Render all enemies
+        // Note: Enemy.render expects camera.getOffset() method that returns negative offsets
+        const cameraWithOffset = {
+            x: offsetX,
+            y: offsetY,
+            getOffset: () => ({ x: -offsetX, y: -offsetY })
+        };
+        this.enemies.forEach(enemy => {
+            enemy.render(ctx, cameraWithOffset);
         });
     }
 }
