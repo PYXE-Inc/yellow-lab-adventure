@@ -320,3 +320,5 @@ class Level {
         });
     }
 }
+
+export { Platform, Level };

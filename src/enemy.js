@@ -99,3 +99,5 @@ class Enemy {
     ctx.strokeRect(screenX, screenY, this.width, this.height);
   }
 }
+
+export default Enemy;
